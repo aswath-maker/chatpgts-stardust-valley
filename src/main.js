@@ -14,27 +14,30 @@ scene.fog = new THREE.FogExp2(0x9ab7c8, 0.0045);
 const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 900);
 camera.position.set(0, 7, 13);
 const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 app.appendChild(renderer.domElement);
 
 const hemi = new THREE.HemisphereLight(0xb9d8ff, 0x2d372c, 1.8); scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xffe6b0, 2.5); sun.position.set(80,120,30); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+const sun = new THREE.DirectionalLight(0xffe6b0, 2.5); sun.position.set(80,120,30); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); scene.add(sun);
 
 const world = new THREE.Group(); scene.add(world);
 const colliders=[];
 const keys = new Set();
 const player = new THREE.Group(); player.position.set(0,1.1,18); world.add(player);
-const body = new THREE.Mesh(new THREE.CapsuleGeometry(.45,.9,6,12), new THREE.MeshToonMaterial({color:0x33445f})); body.castShadow=true; body.position.y=0.7; player.add(body);
+const body = new THREE.Mesh(new THREE.CapsuleGeometry(.45,.9,16,32), new THREE.MeshToonMaterial({color:0x33445f})); body.castShadow=true; body.position.y=0.7; player.add(body);
 const coat = new THREE.Mesh(new THREE.CylinderGeometry(.5,.62,.85,8), new THREE.MeshToonMaterial({color:0x9b3e55})); coat.castShadow=true; coat.position.y=.38; player.add(coat);
-const head = new THREE.Mesh(new THREE.SphereGeometry(.36,16,12), new THREE.MeshToonMaterial({color:0xf0c9a4})); head.castShadow=true; head.position.y=1.2; player.add(head);
-const hair = new THREE.Mesh(new THREE.SphereGeometry(.39,16,8,0,Math.PI*2,0,Math.PI*.55), new THREE.MeshToonMaterial({color:0x25283d})); hair.position.y=1.32; player.add(hair);
+const head = new THREE.Mesh(new THREE.SphereGeometry(.36,32,24), new THREE.MeshToonMaterial({color:0xf0c9a4})); head.castShadow=true; head.position.y=1.2; player.add(head);
+const hair = new THREE.Mesh(new THREE.SphereGeometry(.39,32,20,0,Math.PI*2,0,Math.PI*.55), new THREE.MeshToonMaterial({color:0x25283d})); hair.position.y=1.32; player.add(hair);
 
 function box(x,y,z,c,px=0,py=0,pz=0){const m=new THREE.Mesh(new THREE.BoxGeometry(x,y,z),new THREE.MeshToonMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;m.receiveShadow=true;world.add(m);return m}
-function cyl(r,h,c,px,py,pz,seg=10){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),new THREE.MeshToonMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;m.receiveShadow=true;world.add(m);return m}
-function tree(x,z,s=1){cyl(.22*s,1.8*s,0x5a4637,x,.9*s,z,8);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35*s,1),new THREE.MeshToonMaterial({color:0x496d4e}));crown.position.set(x,2.4*s,z);crown.castShadow=true;world.add(crown)}
+function cyl(r,h,c,px,py,pz,seg=10){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,Math.max(seg,32),1,false),new THREE.MeshToonMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;m.receiveShadow=true;world.add(m);return m}
+function tree(x,z,s=1){cyl(.22*s,1.8*s,0x5a4637,x,.9*s,z,8);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35*s,3),new THREE.MeshToonMaterial({color:0x496d4e}));crown.position.set(x,2.4*s,z);crown.castShadow=true;world.add(crown)}
 function lamp(x,z){cyl(.07,2.5,0x30353b,x,1.25,z,8);const l=cyl(.16,.25,0xffd77a,x,2.6,z,8);l.material.emissive=new THREE.Color(0x7d4e08);}
 
 // Ground and town
@@ -66,11 +69,12 @@ for(let x=13;x<=23;x+=2) box(1.5,.5,10,0x887967,x,.35,4);
 for(let i=0;i<90;i++){const a=Math.random()*Math.PI*2,r=35+Math.random()*48;const x=Math.cos(a)*r,z=Math.sin(a)*r-20;if(Math.abs(x-18)<7) continue;tree(x,z,.65+Math.random()*.65)}
 
 // small floating fireflies
-const fireflies=[]; const fireGeo=new THREE.SphereGeometry(.055,6,6); const fireMat=new THREE.MeshBasicMaterial({color:0xfff0a1});
+const fireflies=[]; const fireGeo=new THREE.SphereGeometry(.055,16,12); const fireMat=new THREE.MeshBasicMaterial({color:0xfff0a1});
 for(let i=0;i<45;i++){const f=new THREE.Mesh(fireGeo,fireMat);f.position.set((Math.random()-.5)*70,1+Math.random()*5,(Math.random()-.5)*80-20);world.add(f);fireflies.push(f)}
 
 // Player movement
-let yaw=0, pitch=.28, dragging=false, lastX=0,lastY=0; let velocityY=0; let dayMinutes=8*60; const dayLength=24*60;
+let yaw=0, pitch=.28, dragging=false, lastX=0,lastY=0;
+// W moves away from the camera, A/D strafe in the expected screen-relative direction. let velocityY=0; let dayMinutes=8*60; const dayLength=24*60;
 renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY}); addEventListener('pointerup',()=>dragging=false);
 addEventListener('pointermove',e=>{if(!dragging)return; yaw-= (e.clientX-lastX)*.006; pitch-= (e.clientY-lastY)*.004; pitch=Math.max(-.15,Math.min(.8,pitch));lastX=e.clientX;lastY=e.clientY});
 addEventListener('keydown',e=>keys.add(e.key.toLowerCase())); addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
