@@ -10,8 +10,8 @@ const weatherEl = document.querySelector('#weather');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9ab7c8);
-scene.fog = new THREE.FogExp2(0x9ab7c8, 0.0045);
-const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 900);
+scene.fog = new THREE.FogExp2(0x9ab7c8, 0.0022);
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.05, 1200);
 camera.position.set(0, 7, 13);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -23,25 +23,26 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 app.appendChild(renderer.domElement);
 
-const hemi = new THREE.HemisphereLight(0xb9d8ff, 0x2d372c, 1.8); scene.add(hemi);
+const hemi = new THREE.HemisphereLight(0xd9ecff, 0x33442f, 3.2); scene.add(hemi);
+const ambient = new THREE.AmbientLight(0xffffff, 0.75); scene.add(ambient);
 const sun = new THREE.DirectionalLight(0xffe6b0, 2.5); sun.position.set(80,120,30); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); scene.add(sun);
 
 const world = new THREE.Group(); scene.add(world);
 const colliders=[];
 const keys = new Set();
 const player = new THREE.Group(); player.position.set(0,1.1,18); world.add(player);
-const body = new THREE.Mesh(new THREE.CapsuleGeometry(.45,.9,16,32), new THREE.MeshToonMaterial({color:0x33445f})); body.castShadow=true; body.position.y=0.7; player.add(body);
-const coat = new THREE.Mesh(new THREE.CylinderGeometry(.5,.62,.85,8), new THREE.MeshToonMaterial({color:0x9b3e55})); coat.castShadow=true; coat.position.y=.38; player.add(coat);
-const head = new THREE.Mesh(new THREE.SphereGeometry(.36,32,24), new THREE.MeshToonMaterial({color:0xf0c9a4})); head.castShadow=true; head.position.y=1.2; player.add(head);
-const hair = new THREE.Mesh(new THREE.SphereGeometry(.39,32,20,0,Math.PI*2,0,Math.PI*.55), new THREE.MeshToonMaterial({color:0x25283d})); hair.position.y=1.32; player.add(hair);
+const body = new THREE.Mesh(new THREE.CapsuleGeometry(.45,.9,16,32), new THREE.MeshStandardMaterial({color:0x33445f,roughness:.7})); body.castShadow=true; body.position.y=0.7; player.add(body);
+const coat = new THREE.Mesh(new THREE.CylinderGeometry(.5,.62,.85,32), new THREE.MeshStandardMaterial({color:0x9b3e55,roughness:.65})); coat.castShadow=true; coat.position.y=.38; player.add(coat);
+const head = new THREE.Mesh(new THREE.SphereGeometry(.36,32,24), new THREE.MeshStandardMaterial({color:0xf0c9a4,roughness:.6})); head.castShadow=true; head.position.y=1.2; player.add(head);
+const hair = new THREE.Mesh(new THREE.SphereGeometry(.39,32,20,0,Math.PI*2,0,Math.PI*.55), new THREE.MeshStandardMaterial({color:0x25283d,roughness:.5})); hair.position.y=1.32; player.add(hair);
 
-function box(x,y,z,c,px=0,py=0,pz=0){const m=new THREE.Mesh(new THREE.BoxGeometry(x,y,z),new THREE.MeshToonMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;m.receiveShadow=true;world.add(m);return m}
-function cyl(r,h,c,px,py,pz,seg=10){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,Math.max(seg,32),1,false),new THREE.MeshToonMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;m.receiveShadow=true;world.add(m);return m}
-function tree(x,z,s=1){cyl(.22*s,1.8*s,0x5a4637,x,.9*s,z,8);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35*s,3),new THREE.MeshToonMaterial({color:0x496d4e}));crown.position.set(x,2.4*s,z);crown.castShadow=true;world.add(crown)}
+function box(x,y,z,c,px=0,py=0,pz=0){const m=new THREE.Mesh(new THREE.BoxGeometry(x,y,z,2,2,2),new THREE.MeshStandardMaterial({color:c,roughness:.82,metalness:0}));m.position.set(px,py,pz);m.castShadow=true;m.receiveShadow=true;world.add(m);return m}
+function cyl(r,h,c,px,py,pz,seg=10){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,Math.max(seg,32),2,false),new THREE.MeshStandardMaterial({color:c,roughness:.8,metalness:0}));m.position.set(px,py,pz);m.castShadow=true;m.receiveShadow=true;world.add(m);return m}
+function tree(x,z,s=1){cyl(.22*s,1.8*s,0x5a4637,x,.9*s,z,8);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35*s,3),new THREE.MeshStandardMaterial({color:0x496d4e,roughness:.9}));crown.position.set(x,2.4*s,z);crown.castShadow=true;world.add(crown)}
 function lamp(x,z){cyl(.07,2.5,0x30353b,x,1.25,z,8);const l=cyl(.16,.25,0xffd77a,x,2.6,z,8);l.material.emissive=new THREE.Color(0x7d4e08);}
 
 // Ground and town
-box(170,.3,170,0x6e8b63,0,-.15,0);
+const ground=box(170,.3,170,0x6e8b63,0,-.15,0); ground.material = new THREE.MeshStandardMaterial({color:0x6e8b63,roughness:.92,metalness:0});
 box(32,.12,10,0x8e8577,0,.02,4); // main road
 box(10,.13,100,0x8e8577,0,.03,-35); // north road
 box(100,.12,8,0x8e8577,-35,.03,-10); // west road
@@ -50,7 +51,7 @@ for(let z=-45;z<=35;z+=12) lamp(5,z);
 
 // Town Hall, climbable tower
 box(22,8,16,0xd8c8a9,0,4,-22); box(26,2,20,0x7e6c5e,0,9,-22);
-const roof=new THREE.Mesh(new THREE.ConeGeometry(15,8,4),new THREE.MeshToonMaterial({color:0x6f4050}));roof.position.set(0,14,-22);roof.rotation.y=Math.PI/4;roof.castShadow=true;world.add(roof);
+const roof=new THREE.Mesh(new THREE.ConeGeometry(15,8,32),new THREE.MeshStandardMaterial({color:0x6f4050,roughness:.72}));roof.position.set(0,14,-22);roof.rotation.y=Math.PI/4;roof.castShadow=true;world.add(roof);
 box(3,11,3,0xb7a58b,-7,5,-22); box(3,11,3,0xb7a58b,7,5,-22);
 box(5,5,1,0x4d5d6a,0,2,-30); // door
 for(let y=2;y<=9;y+=1.4){box(8,.25,1.6,0x8a6d52,0,y,-14);}
@@ -82,7 +83,7 @@ addEventListener('keydown',e=>keys.add(e.key.toLowerCase())); addEventListener('
 function showToast(t){toast.textContent=t;toast.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('show'),2200)}
 function updateClock(dt){dayMinutes=(dayMinutes+dt*0.35)%dayLength; const h=Math.floor(dayMinutes/60),m=Math.floor(dayMinutes%60); const phase=h<6?'Night':h<8?'Dawn':h<18?'Day':h<20?'Dusk':'Night';clockEl.textContent=`Day 1 · ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} · ${phase}`;const t=(h*60+m)/dayLength;const daylight=Math.max(.08,Math.sin((t-.25)*Math.PI*2)*.5+.5);sun.intensity=.5+2.3*daylight;hemi.intensity=.6+1.4*daylight;scene.background.setHSL(.58,.22,.34+.23*daylight);scene.fog.color.copy(scene.background);}
 function move(dt){const speed=(keys.has('shift')?7:4)*dt;const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));let dir=new THREE.Vector3();if(keys.has('w')||keys.has('arrowup'))dir.add(forward);if(keys.has('s')||keys.has('arrowdown'))dir.sub(forward);if(keys.has('d')||keys.has('arrowright'))dir.add(right);if(keys.has('a')||keys.has('arrowleft'))dir.sub(right);if(dir.lengthSq())dir.normalize();player.position.addScaledVector(dir,speed);player.position.x=THREE.MathUtils.clamp(player.position.x,-75,75);player.position.z=THREE.MathUtils.clamp(player.position.z,-85,55);if(keys.has(' ')&&player.position.y<=1.11){velocityY=7}velocityY-=18*dt;player.position.y+=velocityY*dt;if(player.position.y<1.1){player.position.y=1.1;velocityY=0}}
-function cameraUpdate(){const target=player.position.clone().add(new THREE.Vector3(0,1.2,0));const dist=10;const cp=Math.cos(pitch);camera.position.set(target.x+Math.sin(yaw)*dist*cp,target.y+Math.sin(pitch)*dist,target.z+Math.cos(yaw)*dist*cp);camera.lookAt(target)}
+function cameraUpdate(){const target=player.position.clone().add(new THREE.Vector3(0,1.35,0));const dist=9;const cp=Math.cos(pitch);camera.position.set(target.x+Math.sin(yaw)*dist*cp,target.y+Math.sin(pitch)*dist,target.z+Math.cos(yaw)*dist*cp);camera.lookAt(target);camera.updateMatrixWorld()}
 function save(){localStorage.setItem('whispers-save',JSON.stringify({name:nameInput.value,position:player.position.toArray()}));showToast('Game saved.')}
 function interact(){if(player.position.distanceTo(new THREE.Vector3(0,1.1,-22))<12)showToast('Town Hall: the old bell waits above.');else if(player.position.z<-28)showToast('Whisperwood: the deeper forest is still sleeping.');else showToast(`Meridian is quiet, ${nameInput.value}.`)}
 
